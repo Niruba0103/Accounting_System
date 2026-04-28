@@ -47,4 +47,5 @@ app.use('/api/financial-statements', authMiddleware, companyMiddleware, financia
 app.use('/api/stock', authMiddleware, companyMiddleware, stockRoutes);
 app.use('/api/users', authMiddleware, companyMiddleware, userRoutes);
 app.use('/api/dashboard', authMiddleware, companyMiddleware, dashboardRoutes);
+
 module.exports = app;

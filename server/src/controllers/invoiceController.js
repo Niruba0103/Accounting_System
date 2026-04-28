@@ -20,8 +20,9 @@ const getAllInvoices = async (req, res) => {
         ON i.party_type = 'CUSTOMER' AND i.party_id = c.id
       LEFT JOIN suppliers s
         ON i.party_type = 'SUPPLIER' AND i.party_id = s.id
+      WHERE i.company_id = ?
       ORDER BY i.invoice_date ASC, i.id ASC
-    `);
+    `, [req.companyId]);
 
     res.json(rows);
   } catch (error) {
@@ -50,8 +51,8 @@ const getInvoiceById = async (req, res) => {
          ON i.party_type = 'CUSTOMER' AND i.party_id = c.id
        LEFT JOIN suppliers s
          ON i.party_type = 'SUPPLIER' AND i.party_id = s.id
-       WHERE i.id = ?`,
-      [id]
+       WHERE i.id = ? AND i.company_id = ?`,
+      [id, req.companyId]
     );
 
     if (invoiceRows.length === 0) {
@@ -81,6 +82,7 @@ const createSalesInvoice = async (req, res) => {
     const result = await createInvoiceWithVoucher({
       invoice_type: 'SALES',
       ...req.body,
+      company_id: req.companyId,
       created_by: req.user.id
     });
 
@@ -102,6 +104,7 @@ const createPurchaseInvoice = async (req, res) => {
     const result = await createInvoiceWithVoucher({
       invoice_type: 'PURCHASE',
       ...req.body,
+      company_id: req.companyId,
       created_by: req.user.id
     });
 
@@ -138,8 +141,8 @@ const updateInvoice = async (req, res) => {
     await connection.beginTransaction();
 
     const [invoiceRows] = await connection.query(
-      'SELECT * FROM invoices WHERE id = ?',
-      [id]
+      'SELECT * FROM invoices WHERE id = ? AND company_id = ?',
+      [id, req.companyId]
     );
 
     if (invoiceRows.length === 0) {
@@ -179,7 +182,7 @@ const updateInvoice = async (req, res) => {
            total_amount = ?,
            balance_amount = ?,
            remarks = ?
-       WHERE id = ?`,
+       WHERE id = ? AND company_id = ?`,
       [
         invoice_date,
         due_date,
@@ -189,7 +192,8 @@ const updateInvoice = async (req, res) => {
         total_amount,
         total_amount,
         remarks || null,
-        id
+        id,
+        req.companyId
       ]
     );
 
@@ -236,8 +240,8 @@ const deleteInvoice = async (req, res) => {
     await connection.beginTransaction();
 
     const [invoiceRows] = await connection.query(
-      'SELECT * FROM invoices WHERE id = ?',
-      [id]
+      'SELECT * FROM invoices WHERE id = ? AND company_id = ?',
+      [id, req.companyId]
     );
 
     if (invoiceRows.length === 0) {
@@ -255,7 +259,7 @@ const deleteInvoice = async (req, res) => {
     }
 
     await connection.query('DELETE FROM invoice_items WHERE invoice_id = ?', [id]);
-    await connection.query('DELETE FROM invoices WHERE id = ?', [id]);
+    await connection.query('DELETE FROM invoices WHERE id = ? AND company_id = ?', [id, req.companyId]);
 
     await connection.commit();
 
@@ -277,6 +281,7 @@ const createReceiptAgainstInvoice = async (req, res) => {
     const result = await createPaymentOrReceipt({
       payment_type: 'RECEIPT',
       ...req.body,
+      company_id: req.companyId,
       created_by: req.user.id
     });
 
@@ -298,6 +303,7 @@ const createPaymentAgainstInvoice = async (req, res) => {
     const result = await createPaymentOrReceipt({
       payment_type: 'PAYMENT',
       ...req.body,
+      company_id: req.companyId,
       created_by: req.user.id
     });
 

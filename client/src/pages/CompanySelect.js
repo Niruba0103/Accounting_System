@@ -46,7 +46,7 @@ const CompanySelect = () => {
   }
 
   return (
-    <div className="vh-100 d-flex align-items-center justify-content-center bg-light" style={{
+    <div className="vh-60 d-flex align-items-center justify-content-center bg-light" style={{
       background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
     }}>
       <motion.div 

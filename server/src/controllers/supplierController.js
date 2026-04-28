@@ -9,8 +9,9 @@ const getAllSuppliers = async (req, res) => {
       SELECT s.*, l.ledger_name, l.ledger_code
       FROM suppliers s
       LEFT JOIN ledgers l ON s.ledger_id = l.id
+      WHERE s.company_id = ?
       ORDER BY s.id DESC
-    `);
+    `, [req.companyId]);
 
     res.json(rows);
   } catch (error) {
@@ -30,8 +31,8 @@ const getSupplierById = async (req, res) => {
       SELECT s.*, l.ledger_name, l.ledger_code
       FROM suppliers s
       LEFT JOIN ledgers l ON s.ledger_id = l.id
-      WHERE s.id = ?
-    `, [id]);
+      WHERE s.id = ? AND s.company_id = ?
+    `, [id, req.companyId]);
 
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Supplier not found' });
@@ -57,30 +58,31 @@ const createSupplier = async (req, res) => {
 
     if (supplier_code) {
       const [existingCode] = await pool.query(
-        'SELECT id FROM suppliers WHERE supplier_code = ?',
-        [supplier_code]
+        'SELECT id FROM suppliers WHERE supplier_code = ? AND company_id = ?',
+        [supplier_code, req.companyId]
       );
 
       if (existingCode.length > 0) {
-        return res.status(400).json({ message: 'Supplier code already exists' });
+        return res.status(400).json({ message: 'Supplier code already exists in this company' });
       }
     }
 
     if (ledger_id) {
       const [ledger] = await pool.query(
-        'SELECT id FROM ledgers WHERE id = ?',
-        [ledger_id]
+        'SELECT id FROM ledgers WHERE id = ? AND company_id = ?',
+        [ledger_id, req.companyId]
       );
 
       if (ledger.length === 0) {
-        return res.status(400).json({ message: 'Invalid ledger_id' });
+        return res.status(400).json({ message: 'Invalid ledger_id for this company' });
       }
     }
 
     const [result] = await pool.query(
-      `INSERT INTO suppliers (supplier_code, name, phone, email, address, ledger_id)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO suppliers (company_id, supplier_code, name, phone, email, address, ledger_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
+        req.companyId,
         supplier_code,
         name,
         phone,
@@ -114,8 +116,8 @@ const updateSupplier = async (req, res) => {
     const { supplier_code, name, phone, email, address, ledger_id } = req.body;
 
     const [existingRows] = await pool.query(
-      'SELECT * FROM suppliers WHERE id = ?',
-      [id]
+      'SELECT * FROM suppliers WHERE id = ? AND company_id = ?',
+      [id, req.companyId]
     );
 
     if (existingRows.length === 0) {
@@ -126,30 +128,30 @@ const updateSupplier = async (req, res) => {
 
     if (supplier_code && supplier_code !== existing.supplier_code) {
       const [duplicate] = await pool.query(
-        'SELECT id FROM suppliers WHERE supplier_code = ? AND id != ?',
-        [supplier_code, id]
+        'SELECT id FROM suppliers WHERE supplier_code = ? AND id != ? AND company_id = ?',
+        [supplier_code, id, req.companyId]
       );
 
       if (duplicate.length > 0) {
-        return res.status(400).json({ message: 'Supplier code already exists' });
+        return res.status(400).json({ message: 'Supplier code already exists in this company' });
       }
     }
 
     if (ledger_id) {
       const [ledger] = await pool.query(
-        'SELECT id FROM ledgers WHERE id = ?',
-        [ledger_id]
+        'SELECT id FROM ledgers WHERE id = ? AND company_id = ?',
+        [ledger_id, req.companyId]
       );
 
       if (ledger.length === 0) {
-        return res.status(400).json({ message: 'Invalid ledger_id' });
+        return res.status(400).json({ message: 'Invalid ledger_id for this company' });
       }
     }
 
     await pool.query(
       `UPDATE suppliers
        SET supplier_code = ?, name = ?, phone = ?, email = ?, address = ?, ledger_id = ?
-       WHERE id = ?`,
+       WHERE id = ? AND company_id = ?`,
       [
         supplier_code !== undefined ? supplier_code : existing.supplier_code,
         name !== undefined ? name : existing.name,
@@ -157,7 +159,8 @@ const updateSupplier = async (req, res) => {
         email !== undefined ? email : existing.email,
         address !== undefined ? address : existing.address,
         ledger_id !== undefined ? ledger_id : existing.ledger_id,
-        id
+        id,
+        req.companyId
       ]
     );
 
@@ -184,7 +187,7 @@ const deleteSupplier = async (req, res) => {
     const { id } = req.params;
 
     // Check if supplier exists
-    const [supplier] = await pool.query('SELECT * FROM suppliers WHERE id = ?', [id]);
+    const [supplier] = await pool.query('SELECT * FROM suppliers WHERE id = ? AND company_id = ?', [id, req.companyId]);
     if (supplier.length === 0) {
       return res.status(404).json({ message: 'Supplier not found' });
     }
@@ -192,12 +195,12 @@ const deleteSupplier = async (req, res) => {
     // Check for associated invoices (Foreign Key check)
     // NOTE: In the invoices table, suppliers are also party_id? 
     // Usually invoices have a party_type 'CUSTOMER' or 'SUPPLIER'.
-    const [invoices] = await pool.query("SELECT id FROM invoices WHERE party_id = ? AND party_type = 'SUPPLIER'", [id]);
+    const [invoices] = await pool.query("SELECT id FROM invoices WHERE party_id = ? AND party_type = 'SUPPLIER' AND company_id = ?", [id, req.companyId]);
     if (invoices.length > 0) {
       return res.status(400).json({ message: 'Cannot delete supplier: Existing invoices are linked to this supplier.' });
     }
 
-    await pool.query('DELETE FROM suppliers WHERE id = ?', [id]);
+    await pool.query('DELETE FROM suppliers WHERE id = ? AND company_id = ?', [id, req.companyId]);
 
     res.json({ message: 'Supplier deleted successfully' });
   } catch (error) {

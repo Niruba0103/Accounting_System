@@ -22,7 +22,7 @@ const Sidebar = () => {
       items: [
         { to: '/ledgers', label: 'Ledgers', icon: 'bi-book-half', roles: ['admin', 'accountant'] },
         { to: '/customers', label: 'Customers', icon: 'bi-person-badge', roles: ['admin', 'accountant'] },
-        { to: '/suppliers', label: 'Suppliers', icon: 'bi-truck', roles: ['admin', 'accountant'] },
+        { to: '/suppliers', label: 'Suppliers', icon: 'bi-truck', roles: ['admin', 'accountant'] }
       ]
     },
     {

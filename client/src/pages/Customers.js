@@ -5,6 +5,7 @@ import ReportActions from '../components/ReportActions';
 import { useNavigate } from 'react-router-dom';
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
+  const [ledgers, setLedgers] = useState([]);
   const [formData, setFormData] = useState({
     customer_code: '',
     name: '',
@@ -15,8 +16,20 @@ const Customers = () => {
   });
 
   useEffect(() => {
+    fetchLedgers();
     fetchCustomers();
   }, []);
+
+  const fetchLedgers = async () => {
+    try {
+      const response = await axiosInstance.get('/ledgers');
+      console.log('Fetched ledgers:', response.data);
+      setLedgers(response.data);
+    } catch (error) {
+      console.error('Fetch ledgers error:', error);
+      alert('Failed to load ledgers. Please try again.');
+    }
+  };
 
   const fetchCustomers = async () => {
     try {
@@ -115,8 +128,19 @@ const Customers = () => {
           </div>
 
           <div className="col-md-2">
-            <label>Ledger ID</label>
-            <input type="number" name="ledger_id" className="form-control light-input" value={formData.ledger_id} onChange={handleChange} />
+            <label>Ledger</label>
+            <select name="ledger_id" className="form-control light-input" value={formData.ledger_id} onChange={handleChange}>
+              <option value="">-- Select Ledger --</option>
+              {ledgers && ledgers.length > 0 ? (
+                ledgers.map((ledger) => (
+                  <option key={ledger.id} value={ledger.id}>
+                    {ledger.ledger_name}
+                  </option>
+                ))
+              ) : (
+                <option disabled>No ledgers available</option>
+              )}
+            </select>
           </div>
 
           <div className="col-md-9">

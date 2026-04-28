@@ -6,8 +6,9 @@ const getAllAccountGroups = async (req, res) => {
       SELECT ag.*, parent.group_name AS parent_group_name
       FROM account_groups ag
       LEFT JOIN account_groups parent ON ag.parent_group_id = parent.id
+      WHERE ag.company_id = ?
       ORDER BY ag.id ASC
-    `);
+    `, [req.companyId]);
 
     res.json(rows);
   } catch (error) {
@@ -25,9 +26,9 @@ const createAccountGroup = async (req, res) => {
     }
 
     const [result] = await pool.query(
-      `INSERT INTO account_groups (group_name, parent_group_id, category, nature)
-       VALUES (?, ?, ?, ?)`,
-      [group_name, parent_group_id || null, category, nature || 'OTHER']
+      `INSERT INTO account_groups (company_id, group_name, parent_group_id, category, nature)
+       VALUES (?, ?, ?, ?, ?)`,
+      [req.companyId, group_name, parent_group_id || null, category, nature || 'OTHER']
     );
 
     const [rows] = await pool.query(

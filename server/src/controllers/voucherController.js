@@ -14,8 +14,9 @@ const getAllVouchers = async (req, res) => {
       FROM vouchers v
       JOIN financial_years fy ON v.financial_year_id = fy.id
       LEFT JOIN users u ON v.created_by = u.id
+      WHERE v.company_id = ?
       ORDER BY v.voucher_date ASC, v.voucher_no ASC
-    `);
+    `, [req.companyId]);
 
     res.json(rows);
   } catch (error) {
@@ -39,8 +40,8 @@ const getVoucherById = async (req, res) => {
       FROM vouchers v
       JOIN financial_years fy ON v.financial_year_id = fy.id
       LEFT JOIN users u ON v.created_by = u.id
-      WHERE v.id = ?
-    `, [id]);
+      WHERE v.id = ? AND v.company_id = ?
+    `, [id, req.companyId]);
 
     if (voucherRows.length === 0) {
       return res.status(404).json({ message: 'Voucher not found' });
@@ -53,9 +54,9 @@ const getVoucherById = async (req, res) => {
         l.ledger_name
       FROM voucher_entries ve
       JOIN ledgers l ON ve.ledger_id = l.id
-      WHERE ve.voucher_id = ?
+      WHERE ve.voucher_id = ? AND ve.company_id = ?
       ORDER BY ve.id ASC
-    `, [id]);
+    `, [id, req.companyId]);
 
     res.json({
       voucher: voucherRows[0],
@@ -80,6 +81,7 @@ const createJournalVoucher = async (req, res) => {
       reference_no,
       narration,
       entries,
+      company_id: req.companyId,
       created_by: req.user.id
     });
 
@@ -106,6 +108,7 @@ const createPaymentVoucher = async (req, res) => {
       reference_no,
       narration,
       entries,
+      company_id: req.companyId,
       created_by: req.user.id
     });
 
@@ -132,6 +135,7 @@ const createReceiptVoucher = async (req, res) => {
       reference_no,
       narration,
       entries,
+      company_id: req.companyId,
       created_by: req.user.id
     });
 

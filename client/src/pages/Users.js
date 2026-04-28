@@ -10,6 +10,7 @@ const Users = () => {
     password: '',
     role: 'viewer'
   });
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -36,7 +37,13 @@ const Users = () => {
     e.preventDefault();
 
     try {
-      await axiosInstance.post('/users', formData);
+      if (editingId) {
+        await axiosInstance.put(`/users/${editingId}`, formData);
+        alert('User updated successfully');
+      } else {
+        await axiosInstance.post('/users', formData);
+        alert('User created successfully');
+      }
 
       setFormData({
         name: '',
@@ -44,13 +51,33 @@ const Users = () => {
         password: '',
         role: 'viewer'
       });
+      setEditingId(null);
 
       fetchUsers();
-      alert('User created successfully');
     } catch (error) {
-      console.error('Create user error:', error);
-      alert(error.response?.data?.message || 'Error creating user');
+      console.error('Save user error:', error);
+      alert(error.response?.data?.message || 'Error saving user');
     }
+  };
+
+  const handleEdit = (user) => {
+    setFormData({
+      name: user.name,
+      email: user.email,
+      password: '', // Leave password empty when editing unless they want to change it
+      role: user.role
+    });
+    setEditingId(user.id);
+  };
+
+  const handleCancelEdit = () => {
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      role: 'viewer'
+    });
+    setEditingId(null);
   };
 
   const handleRoleChange = async (id, role) => {
@@ -63,18 +90,7 @@ const Users = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    const confirmDelete = window.confirm('Are you sure you want to remove this user from this company?');
-    if (!confirmDelete) return;
 
-    try {
-      await axiosInstance.delete(`/users/${id}`);
-      fetchUsers();
-    } catch (error) {
-      console.error('Delete user error:', error);
-      alert(error.response?.data?.message || 'Error deleting user');
-    }
-  };
 
   return (
     <motion.div
@@ -133,10 +149,15 @@ const Users = () => {
             </select>
           </div>
 
-          <div className="col-md-2 d-flex align-items-end">
+          <div className="col-md-2 d-flex align-items-end gap-2">
             <button className="btn light-btn w-100" type="submit">
-              Add User
+              {editingId ? 'Update User' : 'Add User'}
             </button>
+            {editingId && (
+              <button className="btn btn-secondary w-100" type="button" onClick={handleCancelEdit}>
+                Cancel
+              </button>
+            )}
           </div>
         </form>
       </div>
@@ -174,10 +195,10 @@ const Users = () => {
                 <td>{new Date(user.created_at).toLocaleDateString()}</td>
                 <td>
                   <button
-                    className="btn light-btn light-btn-danger btn-sm"
-                    onClick={() => handleDelete(user.id)}
+                    className="btn light-btn btn-sm"
+                    onClick={() => handleEdit(user)}
                   >
-                    Remove
+                    Edit
                   </button>
                 </td>
               </tr>

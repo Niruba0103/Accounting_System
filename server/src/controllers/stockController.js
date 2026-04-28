@@ -14,19 +14,20 @@ const createStockItem = async (req, res) => {
 
     if (item_code) {
       const [existing] = await pool.query(
-        'SELECT id FROM stock_items WHERE item_code = ?',
-        [item_code]
+        'SELECT id FROM stock_items WHERE item_code = ? AND company_id = ?',
+        [item_code, req.companyId]
       );
 
       if (existing.length > 0) {
-        return res.status(400).json({ message: 'item_code already exists' });
+        return res.status(400).json({ message: 'item_code already exists in this company' });
       }
     }
 
     const [result] = await pool.query(
-      `INSERT INTO stock_items (item_code, item_name, unit, opening_qty, opening_rate)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO stock_items (company_id, item_code, item_name, unit, opening_qty, opening_rate)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [
+        req.companyId,
         item_code || null,
         item_name,
         unit || null,
@@ -73,12 +74,12 @@ const createStockMovement = async (req, res) => {
     }
 
     const [itemRows] = await pool.query(
-      'SELECT id FROM stock_items WHERE id = ?',
-      [item_id]
+      'SELECT id FROM stock_items WHERE id = ? AND company_id = ?',
+      [item_id, req.companyId]
     );
 
     if (itemRows.length === 0) {
-      return res.status(400).json({ message: 'Invalid item_id' });
+      return res.status(400).json({ message: 'Invalid item_id for this company' });
     }
 
     if (!['IN', 'OUT', 'ADJUSTMENT'].includes(movement_type)) {
@@ -87,9 +88,10 @@ const createStockMovement = async (req, res) => {
 
     await pool.query(
       `INSERT INTO stock_movements
-       (item_id, movement_date, movement_type, qty, rate, reference_type, reference_id, remarks)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (company_id, item_id, movement_date, movement_type, qty, rate, reference_type, reference_id, remarks)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        req.companyId,
         item_id,
         movement_date,
         movement_type,
@@ -121,7 +123,7 @@ const getStockOnHand = async (req, res) => {
       return res.status(400).json({ message: 'to_date is required' });
     }
 
-    const rows = await getStockOnHandData(to_date);
+    const rows = await getStockOnHandData(to_date, req.companyId);
 
     res.json({
       to_date,

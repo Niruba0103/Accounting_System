@@ -143,9 +143,53 @@ const deleteUser = async (req, res) => {
   }
 };
 
+/*
+  UPDATE USER (Full Update)
+*/
+const updateUser = async (req, res) => {
+  const connection = await pool.getConnection();
+  try {
+    const { id } = req.params;
+    const { name, email, role, password } = req.body;
+    const { companyId } = req;
+
+    await connection.beginTransaction();
+
+    // 1. Update global user info (name, email)
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await connection.query(
+        'UPDATE users SET name = ?, email = ?, password_hash = ? WHERE id = ?',
+        [name, email, hashedPassword, id]
+      );
+    } else {
+      await connection.query(
+        'UPDATE users SET name = ?, email = ? WHERE id = ?',
+        [name, email, id]
+      );
+    }
+
+    // 2. Update role in current company context
+    await connection.query(
+      'UPDATE user_companies SET role = ? WHERE user_id = ? AND company_id = ?',
+      [role, id, companyId]
+    );
+
+    await connection.commit();
+    res.json({ message: 'User updated successfully' });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Update user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  } finally {
+    connection.release();
+  }
+};
+
 module.exports = {
   getAllUsers,
   createUser,
   updateUserRole,
+  updateUser,
   deleteUser
 };

@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { setupDefaultCompanyData } = require('../services/companyService');
 
 const createCompany = async (req, res) => {
   const connection = await pool.getConnection();
@@ -26,6 +27,9 @@ const createCompany = async (req, res) => {
        VALUES (?, ?, 'admin', 'active')`,
       [req.user.id, companyId]
     );
+
+    // 3. Setup default groups and ledgers
+    await setupDefaultCompanyData(companyId, connection);
 
     await connection.commit();
 

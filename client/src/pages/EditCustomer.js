@@ -15,10 +15,23 @@ const EditCustomer = () => {
     address: '',
     ledger_id: ''
   });
+  const [ledgers, setLedgers] = useState([]);
 
   useEffect(() => {
+    fetchLedgers();
     fetchCustomer();
   }, [id]);
+
+  const fetchLedgers = async () => {
+    try {
+      const response = await axiosInstance.get('/ledgers');
+      console.log('Fetched ledgers:', response.data);
+      setLedgers(response.data);
+    } catch (error) {
+      console.error('Fetch ledgers error:', error);
+      alert('Failed to load ledgers. Please try again.');
+    }
+  };
 
   const fetchCustomer = async () => {
     try {
@@ -118,14 +131,24 @@ const EditCustomer = () => {
           </div>
 
           <div className="col-md-2">
-            <label>Ledger ID</label>
-            <input
-              type="number"
+            <label>Ledger</label>
+            <select
               name="ledger_id"
               className="form-control light-input"
               value={formData.ledger_id}
               onChange={handleChange}
-            />
+            >
+              <option value="">-- Select Ledger --</option>
+              {ledgers && ledgers.length > 0 ? (
+                ledgers.map((ledger) => (
+                  <option key={ledger.id} value={ledger.id}>
+                    {ledger.ledger_name}
+                  </option>
+                ))
+              ) : (
+                <option disabled>No ledgers available</option>
+              )}
+            </select>
           </div>
 
           <div className="col-md-9">

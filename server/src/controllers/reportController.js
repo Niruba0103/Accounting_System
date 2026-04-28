@@ -23,9 +23,10 @@ const getDebtorsReport = async (req, res) => {
       JOIN customers c ON i.party_id = c.id
       WHERE i.invoice_type = 'SALES'
         AND i.party_type = 'CUSTOMER'
+        AND i.company_id = ?
         AND i.invoice_date BETWEEN ? AND ?
       ORDER BY i.invoice_date ASC, i.invoice_no ASC
-    `, [from_date, to_date]);
+    `, [req.companyId, from_date, to_date]);
 
     res.json(rows);
   } catch (error) {
@@ -57,9 +58,10 @@ const getCreditorsReport = async (req, res) => {
       JOIN suppliers s ON i.party_id = s.id
       WHERE i.invoice_type = 'PURCHASE'
         AND i.party_type = 'SUPPLIER'
+        AND i.company_id = ?
         AND i.invoice_date BETWEEN ? AND ?
       ORDER BY i.invoice_date ASC, i.invoice_no ASC
-    `, [from_date, to_date]);
+    `, [req.companyId, from_date, to_date]);
 
     res.json(rows);
   } catch (error) {
@@ -94,9 +96,10 @@ const getPaymentDetailReport = async (req, res) => {
       LEFT JOIN suppliers s
         ON pd.party_type = 'SUPPLIER' AND pd.party_id = s.id
       WHERE pd.payment_type = 'PAYMENT'
+        AND pd.company_id = ?
         AND pd.payment_date BETWEEN ? AND ?
       ORDER BY pd.payment_date ASC, v.voucher_no ASC
-    `, [from_date, to_date]);
+    `, [req.companyId, from_date, to_date]);
 
     res.json(rows);
   } catch (error) {
@@ -131,9 +134,10 @@ const getReceiptDetailReport = async (req, res) => {
       LEFT JOIN customers c
         ON pd.party_type = 'CUSTOMER' AND pd.party_id = c.id
       WHERE pd.payment_type = 'RECEIPT'
+        AND pd.company_id = ?
         AND pd.payment_date BETWEEN ? AND ?
       ORDER BY pd.payment_date ASC, v.voucher_no ASC
-    `, [from_date, to_date]);
+    `, [req.companyId, from_date, to_date]);
 
     res.json(rows);
   } catch (error) {

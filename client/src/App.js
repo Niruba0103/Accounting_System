@@ -96,7 +96,6 @@ function App() {
             </CompanyProtectedRoute>
           }
         />
-        {/* Wait, the above nesting for Customers looks a bit messy. I'll clean up the structure below. */}
 
         <Route
           path="/suppliers"
@@ -328,7 +327,6 @@ function App() {
             </CompanyProtectedRoute>
           }
         />
-
       </Routes>
     </BrowserRouter>
   );
